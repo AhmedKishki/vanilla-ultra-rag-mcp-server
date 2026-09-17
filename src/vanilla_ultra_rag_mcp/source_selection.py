@@ -1,4 +1,4 @@
-"""Source-selection helpers for the PDF/EPUB research verifier."""
+"""Source-selection helpers for the PDF/EPUB corpus verifier."""
 
 from __future__ import annotations
 

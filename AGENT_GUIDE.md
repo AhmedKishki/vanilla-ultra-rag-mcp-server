@@ -8,13 +8,6 @@ joint project of THUNLP, NEUIR, OpenBMB, AI9stars, and its contributors. This
 gateway is independent and unofficial; do not imply upstream affiliation or
 endorsement. The canonical source is https://github.com/OpenBMB/UltraRAG.
 
-Its intended research workflow uses original PDF and EPUB sources. Do not ingest
-Markdown notes, source maps, drafts, or other generated research files as source
-documents. The upstream corpus tool accepts those formats, and the vanilla
-gateway does not technically block them. When a directory is mixed, require a
-PDF/EPUB-only input directory or use the repository's filtered terminal
-verifier.
-
 ## Client instruction snippet
 
 For clients that do not surface MCP server instructions, add this to the
@@ -30,6 +23,8 @@ agent's project instructions:
 
 - Inspect and follow each tool's MCP schema; do not invent parameter names.
 - Use absolute paths beneath the workspace supplied by the user.
+- Before corpus ingestion, inspect the selected input and confirm that the user
+  intends every supported file in it to become source material.
 - Confirm before calling tools that write, overwrite, index, evaluate, start a
   service, use external credentials, or load a large/GPU model.
 - A component's `build` tool produces UltraRAG server metadata. It is not corpus
@@ -119,5 +114,5 @@ environment.
   results file.
 - Pipeline memory snapshots are produced by UltraRAG's pipeline runner, which
   this vanilla MCP gateway does not wrap.
-- Project scoping, read-only search, provenance enrichment, and research-library
-  conveniences belong in separately named extension servers.
+- The gateway does not add project scoping, read-only search, provenance
+  enrichment, or simplified knowledge-base workflows.

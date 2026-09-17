@@ -27,9 +27,8 @@ generation are the essential RAG stages.
 
 Use the exact input schemas supplied with each tool. Important call order:
 - Corpus: build a corpus before chunking it.
-- This project's research workflow treats only PDF and EPUB files as source
-  documents. The upstream corpus tool also accepts other formats, so do not pass
-  it a mixed directory containing Markdown notes or generated research files.
+- Before corpus ingestion, inspect the selected input and confirm that the user
+  intends every supported file in it to become source material.
 - Dense retrieval: retriever_init, then retriever_embed and retriever_index when
   building; after an existing index is available, retriever_init then
   retriever_search. This is the retrieval path used by the official Vanilla RAG

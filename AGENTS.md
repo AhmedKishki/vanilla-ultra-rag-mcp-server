@@ -9,12 +9,6 @@ Provide one local stdio MCP server, `vanilla-ultra-rag-mcp`, that exposes the
 existing MCP surface of one pinned, unmodified UltraRAG release to general MCP
 clients and AI agents.
 
-The user-facing purpose is research: let an AI agent build and query a
-project-owned knowledge base of original PDF and EPUB sources, retrieve evidence
-across several works, and help a human quote and cite those works. The vanilla
-release is the compatibility foundation; research-specific enforcement and
-provenance features must remain clearly distinguished from upstream behavior.
-
 This repository is an external compatibility and presentation layer. It is not
 an UltraRAG fork and must not become a place for new RAG behavior. Other MCP
 servers or extensions belong in separate repositories.
@@ -45,12 +39,20 @@ Current baseline:
   drift.
 - Keep MCP stdout free of logs, progress text, and banners.
 - Keep generated data outside the managed UltraRAG runtime.
-- The intended research profile excludes Markdown and other derived notes from
-  ingestion. The upstream corpus tool still accepts them, so this is guidance,
-  not gateway enforcement.
-
 If a requested change violates this contract, it belongs in a separately named
 repository rather than this one.
+
+## Documentation responsibilities
+
+- `README.md` is a standalone user manual: capability summary, installation,
+  MCP configuration, concrete usage, expected results, storage, and user-visible
+  limitations. It must not compare or link to sibling MCP-server projects.
+- `AGENT_GUIDE.md` is operational policy for an AI agent calling MCP tools. Do
+  not put installation or contributor workflows there.
+- `AGENTS.md` is this engineering contract. Do not turn it into user-facing
+  setup documentation.
+- `NOTICE` contains attribution and legal notices.
+- Compatibility JSON records the machine-reviewed upstream interface.
 
 ## Architecture
 
