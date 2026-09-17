@@ -1,11 +1,28 @@
 # vanilla-ultra-rag-mcp-server
 
-Use UltraRAG from an AI agent through one local stdio MCP server.
+Use UltraRAG from an AI agent as a project-local research knowledge base.
+
+## Purpose
+
+This project is for research collections made from original PDF and EPUB
+sources. It lets an AI agent call UltraRAG to extract those sources, split them
+into searchable passages, build an index, and retrieve evidence from several
+works for a human researcher to inspect, compare, quote, and cite.
+
+The goal is not merely to chat with one document. Each research project should
+have its own durable knowledge base that can be searched repeatedly without
+mixing it with another project's sources.
 
 This gateway exposes the MCP tools and prompts already provided by UltraRAG. It
 does not modify UltraRAG or add new retrieval behavior. The current release is
 pinned to UltraRAG `0.3.0.2` at commit
 `3a709a2aea3fbe46acca59c422621c94b6e86857`.
+
+This vanilla release is the compatibility foundation. It can create and search
+a real local BM25 knowledge base, but it does not yet add structured source
+metadata, metadata filters, hybrid BM25/vector search, or page-level citation
+locators. Those belong in a separately named research extension rather than
+being presented as existing UltraRAG behavior.
 
 What you get:
 
@@ -82,16 +99,58 @@ models.
 Running `vanilla-ultra-rag-mcp` directly in a terminal produces no interactive
 prompt; a stdio MCP server waits for JSON-RPC messages from an MCP client.
 
+## What the knowledge base contains
+
+UltraRAG does not produce one special database file. A usable knowledge base is
+the combination of extracted text, chunks, and an index. A project can look
+like this after the terminal verifier runs:
+
+```text
+research-project/
+├── sources/                         # original PDF and EPUB files
+└── .ultrarag/
+    ├── runtime/
+    │   ├── logs/                    # MCP child-process diagnostics
+    │   └── ui-storage/              # storage reserved for the UltraRAG UI
+    └── verification-run-001/
+        ├── corpus/documents.jsonl   # one extracted-text record per source
+        ├── chunks/chunks.jsonl      # smaller searchable passages
+        ├── indexes/bm25/            # vocabulary and numerical BM25 index
+        ├── runtime/                 # runtime logs/storage for this run
+        ├── logs/                    # verifier diagnostics
+        └── verification-report.json # counts, query, and returned passages
+```
+
+`documents.jsonl` contains the extracted text of each source. In vanilla
+UltraRAG, the source ID and title are derived from its filename stem.
+
+`chunks.jsonl` divides each document into passages. Every record contains a
+numeric chunk ID, its document ID, its title, and its text. It does not retain
+the original file path or PDF page number.
+
+`indexes/bm25/` contains search data such as the term vocabulary and sparse
+score matrices. These files are not readable research notes and do not replace
+the corpus or chunks. BM25 uses them to rank which chunks best match a query.
+
+A search therefore does not reopen every PDF. It searches the index, selects
+the highest-ranking chunk texts, and returns those texts to the AI agent. The
+agent then explains or quotes the evidence. Normal searches are returned through
+MCP and are not automatically saved as separate files.
+
 ## Use it with documents
 
 After the server appears in your MCP client, ask the agent to perform the
 workflow explicitly. For example:
 
 > Using vanilla-ultra-rag-mcp, ingest all supported documents under
-> `/absolute/path/to/project/sources`, create corpus and chunk files under
+> `/absolute/path/to/project/original-sources`, create corpus and chunk files under
 > `/absolute/path/to/project/.ultrarag`, build a CPU BM25 index, and search it
 > for "your research question". Show the retrieved passages and their available
 > source identifiers.
+
+The input directory in that request must contain only PDF and EPUB source
+documents. Do not point the MCP corpus tool at a mixed directory containing
+Markdown notes, source maps, drafts, or generated research files.
 
 The server supplies lifecycle instructions to compatible agents. The main BM25
 sequence is:
@@ -106,8 +165,12 @@ sequence is:
 Direct search results are returned to the agent. They are not automatically
 written to a separate results file.
 
-The upstream corpus tool accepts TXT, Markdown, PDF, XPS/OXPS, EPUB, MOBI, FB2,
-and DOCX files. Legacy DOC and WPS conversion requires LibreOffice.
+The upstream vanilla corpus tool also accepts Markdown and several other file
+types. The gateway exposes that tool unchanged, so PDF/EPUB-only ingestion is
+currently an agent instruction rather than a hard security boundary. The
+terminal verifier below enforces the intended research profile by presenting
+only PDF and EPUB files to UltraRAG, even when its input directory also contains
+Markdown files.
 
 ### Project separation
 
@@ -120,8 +183,9 @@ separate, non-vanilla MCP server.
 
 ## Verify a document collection from the terminal
 
-The included verifier performs real ingestion, chunking, BM25 indexing, reload,
-and search through the stdio MCP server:
+The included verifier selects only PDF and EPUB files, then performs real
+ingestion, chunking, BM25 indexing, reload, and search through the stdio MCP
+server:
 
 ```bash
 uv run python scripts/verify_corpus.py \
@@ -132,9 +196,10 @@ uv run python scripts/verify_corpus.py \
 
 Use a new verification workspace for each run. The command creates inspectable
 corpus JSONL, chunk JSONL, BM25 index, logs, and
-`verification-report.json`. A passing report confirms mechanical coverage and
-retrieval for that run; it does not guarantee extraction fidelity, ranking
-quality, or citation accuracy.
+`verification-report.json`. The report lists the selected source files and their
+extensions, making it possible to confirm that no Markdown file was included. A
+passing report confirms mechanical coverage and retrieval for that run; it does
+not guarantee extraction fidelity, ranking quality, or citation accuracy.
 
 Run the automated gateway tests with:
 
@@ -164,8 +229,11 @@ currently target Milvus or Qdrant rather than the verifier's local BM25 index.
 This server intentionally preserves the upstream UltraRAG interface:
 
 - it does not enforce a project root;
-- it does not add metadata filters or automatic project selection;
+- direct MCP calls do not technically enforce PDF/EPUB-only ingestion;
+- it does not preserve source paths, structured bibliographic metadata, or
+  metadata filters;
 - it does not add page-level citation locators;
+- it does not combine BM25 and vector results into hybrid retrieval;
 - it does not simplify or hide heavyweight, GPU, or network-backed tools; and
 - it does not wrap UltraRAG's complete YAML pipeline runner as a new MCP tool.
 

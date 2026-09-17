@@ -3,6 +3,13 @@
 This server aggregates the existing UltraRAG MCP servers. It does not add or
 change RAG behavior. Tool names use `<component>_<upstream-tool-name>`.
 
+Its intended research workflow uses original PDF and EPUB sources. Do not ingest
+Markdown notes, source maps, drafts, or other generated research files as source
+documents. The upstream corpus tool accepts those formats, and the vanilla
+gateway does not technically block them. When a directory is mixed, require a
+PDF/EPUB-only input directory or use the repository's filtered terminal
+verifier.
+
 ## Client instruction snippet
 
 For clients that do not surface MCP server instructions, add this to the
@@ -60,6 +67,7 @@ resources; follow the upstream tool description and configured environment.
 
 - Tool paths and collection names are caller-controlled; the gateway is not a
   project sandbox.
+- PDF/EPUB-only ingestion is an agent policy, not an enforced gateway boundary.
 - Search results have the same structure as upstream UltraRAG and may lack
   structured metadata, scores, and citation locators.
 - Direct searches return data to the MCP client but do not create a separate

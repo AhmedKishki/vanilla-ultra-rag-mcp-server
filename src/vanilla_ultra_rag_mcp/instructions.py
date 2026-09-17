@@ -7,6 +7,9 @@ reranker, retriever, router, and sayhello.
 
 Use the exact input schemas supplied with each tool. Important call order:
 - Corpus: build a corpus before chunking it.
+- This project's research workflow treats only PDF and EPUB files as source
+  documents. The upstream corpus tool also accepts other formats, so do not pass
+  it a mixed directory containing Markdown notes or generated research files.
 - Dense retrieval: retriever_init, then retriever_embed and retriever_index when
   building; after an existing index is available, retriever_init then search.
 - BM25: retriever_init with backend='bm25', then bm25_index when building. In
@@ -23,6 +26,6 @@ before write operations, and keep runtime paths under the configured workspace.
 
 Direct retriever calls return passages to the MCP client and do not create a
 separate search-results file. This vanilla gateway does not add project-root
-enforcement, metadata filters, citation locators, a read-only policy, or any
-other extension behavior.
+enforcement, file-type enforcement, metadata filters, citation locators, a
+read-only policy, or any other extension behavior.
 """

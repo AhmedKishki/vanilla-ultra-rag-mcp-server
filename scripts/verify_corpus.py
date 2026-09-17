@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -14,28 +15,14 @@ from typing import Any
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
-SUPPORTED_EXTENSIONS = frozenset(
-    {
-        ".doc",
-        ".docx",
-        ".epub",
-        ".fb2",
-        ".md",
-        ".mobi",
-        ".oxps",
-        ".pdf",
-        ".txt",
-        ".wps",
-        ".xps",
-    }
-)
+from vanilla_ultra_rag_mcp.source_selection import input_files, stage_input_files
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Verify a document directory through vanilla UltraRAG's existing "
-            "corpus, chunking, and BM25 MCP tools."
+            "Verify PDF and EPUB sources through vanilla UltraRAG's existing "
+            "corpus, chunking, and BM25 MCP tools. Other file types are ignored."
         )
     )
     parser.add_argument("source", type=Path, help="Document file or directory")
@@ -68,15 +55,6 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _input_files(source: Path) -> list[Path]:
-    candidates = [source] if source.is_file() else list(source.rglob("*"))
-    return sorted(
-        path
-        for path in candidates
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
-    )
-
-
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [
         json.loads(line)
@@ -104,9 +82,9 @@ async def _verify(args: argparse.Namespace) -> dict[str, Any]:
     if args.top_k < 1 or args.chunk_size < 1:
         raise ValueError("--top-k and --chunk-size must be positive")
 
-    inputs = _input_files(source)
+    inputs = input_files(source)
     if not inputs:
-        raise RuntimeError(f"No vanilla-supported documents found beneath {source}")
+        raise RuntimeError(f"No PDF or EPUB source documents found beneath {source}")
 
     duplicate_stems = {
         stem: count
@@ -156,7 +134,7 @@ async def _verify(args: argparse.Namespace) -> dict[str, Any]:
         log_file=workspace / "logs" / "gateway-stderr.log",
     )
 
-    print(f"[1/5] Found {len(inputs)} supported input files")
+    print(f"[1/5] Found {len(inputs)} PDF/EPUB source files")
     async with Client(transport) as client:
         tools = {tool.name for tool in await client.list_tools()}
         required_tools = {
@@ -170,14 +148,22 @@ async def _verify(args: argparse.Namespace) -> dict[str, Any]:
         if missing_tools:
             raise RuntimeError(f"Gateway is missing required tools: {missing_tools}")
 
-        print("[2/5] Building the vanilla text corpus")
-        await client.call_tool(
-            "corpus_build_text_corpus",
-            {
-                "parse_file_path": str(source),
-                "text_corpus_save_path": str(corpus_path),
-            },
-        )
+        print("[2/5] Building the PDF/EPUB-only vanilla text corpus")
+        with tempfile.TemporaryDirectory(
+            prefix="vanilla-ultrarag-sources-"
+        ) as temporary:
+            filtered_source = stage_input_files(
+                source,
+                inputs,
+                Path(temporary),
+            )
+            await client.call_tool(
+                "corpus_build_text_corpus",
+                {
+                    "parse_file_path": str(filtered_source),
+                    "text_corpus_save_path": str(corpus_path),
+                },
+            )
         corpus_rows = _read_jsonl(corpus_path)
         if len(corpus_rows) != len(inputs):
             raise RuntimeError(
@@ -254,6 +240,10 @@ async def _verify(args: argparse.Namespace) -> dict[str, Any]:
         "source": str(source),
         "workspace": str(workspace),
         "supported_input_files": len(inputs),
+        "source_files": [
+            path.name if source.is_file() else path.relative_to(source).as_posix()
+            for path in inputs
+        ],
         "extensions": dict(
             sorted(Counter(path.suffix.lower() for path in inputs).items())
         ),

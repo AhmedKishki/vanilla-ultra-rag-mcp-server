@@ -9,6 +9,12 @@ Provide one local stdio MCP server, `vanilla-ultra-rag-mcp`, that exposes the
 existing MCP surface of one pinned, unmodified UltraRAG release to general MCP
 clients and AI agents.
 
+The user-facing purpose is research: let an AI agent build and query a
+project-owned knowledge base of original PDF and EPUB sources, retrieve evidence
+across several works, and help a human quote and cite those works. The vanilla
+release is the compatibility foundation; research-specific enforcement and
+provenance features must remain clearly distinguished from upstream behavior.
+
 This repository is an external compatibility and presentation layer. It is not
 an UltraRAG fork and must not become a place for new RAG behavior. Other MCP
 servers or extensions belong in separate repositories.
@@ -34,6 +40,9 @@ Current baseline:
   drift.
 - Keep MCP stdout free of logs, progress text, and banners.
 - Keep generated data outside the managed UltraRAG runtime.
+- The intended research profile excludes Markdown and other derived notes from
+  ingestion. The upstream corpus tool still accepts them, so this is guidance,
+  not gateway enforcement.
 
 If a requested change violates this contract, it belongs in a separately named
 repository rather than this one.
@@ -141,7 +150,8 @@ installed console command with a real FastMCP client and verify discovery,
 instructions, and one tool call.
 
 For document-path changes, run `scripts/verify_corpus.py` against a representative
-PDF/EPUB/Markdown collection using a fresh external workspace.
+PDF/EPUB collection, including unrelated Markdown files to verify exclusion,
+using a fresh external workspace.
 
 ## Updating UltraRAG deliberately
 
@@ -164,5 +174,6 @@ Do not regenerate a manifest merely to make a failing compatibility test pass.
   for its knowledge-base indexing views.
 - Vanilla UltraRAG does not provide hard project isolation, metadata filtering,
   or page-level citation locators.
-- Recursive corpus ingestion includes every supported file beneath the supplied
-  path; there is no vanilla include/exclude filter.
+- Direct recursive corpus ingestion includes every upstream-supported file
+  beneath the supplied path; there is no vanilla include/exclude filter. The
+  repository verifier works around this with a temporary PDF/EPUB-only view.
