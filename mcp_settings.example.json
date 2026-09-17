@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "vanilla-ultra-rag-mcp": {
+      "command": "/absolute/path/to/vanilla-ultra-rag-mcp-server/.venv/bin/vanilla-ultra-rag-mcp",
+      "args": [
+        "--workspace-root",
+        "/absolute/path/to/project/.ultrarag/runtime"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [],
+      "timeout": 1800
+    }
+  }
+}

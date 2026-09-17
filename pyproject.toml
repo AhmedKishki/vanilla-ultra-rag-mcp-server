@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vanilla-ultra-rag-mcp"
+version = "0.1.0"
+description = "A sync-safe stdio MCP gateway for UltraRAG's existing MCP servers"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # Match the pinned versions in the target UltraRAG revision's uv.lock.
+    "fastmcp==3.4.0",
+    "openai==2.50.0",
+    "ultrarag @ https://github.com/OpenBMB/UltraRAG/archive/3a709a2aea3fbe46acca59c422621c94b6e86857.tar.gz#sha256=cb7b7b10dd8eacecd43d7e6705baea4cd431710e7016a0b66673c56821accece",
+    # Required to import and expose the existing evaluation server.
+    "rouge-score",
+    # Required for the lightweight state-retention smoke test and vanilla BM25.
+    "bm25s==0.3.10",
+    "numba==0.65.0",
+    "platformdirs",
+]
+
+[project.scripts]
+vanilla-ultra-rag-mcp = "vanilla_ultra_rag_mcp.server:main"
+vanilla-ultra-rag-runtime = "vanilla_ultra_rag_mcp.runtime:main"
+vanilla-ultra-rag-ui = "vanilla_ultra_rag_mcp.ui:main"
+
+[project.urls]
+Repository = "https://github.com/AhmedKishki/vanilla-ultra-rag-mcp-server"
+Issues = "https://github.com/AhmedKishki/vanilla-ultra-rag-mcp-server/issues"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff>=0.7.3",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

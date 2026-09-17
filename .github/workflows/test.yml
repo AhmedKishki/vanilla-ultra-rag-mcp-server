@@ -1,0 +1,48 @@
+name: Test vanilla UltraRAG MCP server
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  vanilla-ultra-rag-mcp:
+    runs-on: ubuntu-latest
+    env:
+      ULTRARAG_ROOT: ${{ github.workspace }}/.ci/UltraRAG
+      VANILLA_ULTRARAG_CACHE_ROOT: ${{ runner.temp }}/vanilla-ultrarag-cache
+    steps:
+      - name: Check out MCP server
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check out pinned UltraRAG
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: OpenBMB/UltraRAG
+          ref: 3a709a2aea3fbe46acca59c422621c94b6e86857
+          path: .ci/UltraRAG
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Check formatting and lint
+        run: |
+          uv run --frozen ruff format --check .
+          uv run --frozen ruff check .
+
+      - name: Install and verify clone-free runtime
+        run: |
+          uv run --frozen vanilla-ultra-rag-runtime
+          uv run --frozen vanilla-ultra-rag-runtime --offline
+
+      - name: Test MCP parity, stdio, and CPU BM25
+        run: uv run --frozen pytest -q
