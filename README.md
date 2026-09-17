@@ -2,6 +2,30 @@
 
 Run UltraRAG's existing Vanilla RAG components through one stdio MCP server.
 
+## Credit to UltraRAG
+
+This project is directly based on
+[`OpenBMB/UltraRAG`](https://github.com/OpenBMB/UltraRAG). UltraRAG's upstream
+team describes it as a joint project of
+[`THUNLP`](https://nlp.csai.tsinghua.edu.cn/) at Tsinghua University,
+[`NEUIR`](https://neuir.github.io/) at Northeastern University,
+[`OpenBMB`](https://www.openbmb.cn/home), and
+[`AI9stars`](https://github.com/AI9Stars), together with the
+[`UltraRAG contributors`](https://github.com/OpenBMB/UltraRAG/graphs/contributors).
+Their MCP server architecture, tools, prompts, pipeline design, and runtime make
+this gateway possible.
+
+The pinned upstream software is UltraRAG `0.3.0.2` at commit
+[`3a709a2`](https://github.com/OpenBMB/UltraRAG/tree/3a709a2aea3fbe46acca59c422621c94b6e86857),
+licensed under the
+[`Apache License 2.0`](https://github.com/OpenBMB/UltraRAG/blob/3a709a2aea3fbe46acca59c422621c94b6e86857/LICENSE.txt)
+with the upstream copyright notice `Copyright 2023 OpenBMB`.
+
+This is an independent compatibility project. It is not an official UltraRAG
+release and is not affiliated with or endorsed by OpenBMB or the other upstream
+organizations. See [`NOTICE`](NOTICE) for complete attribution and a suggested
+software citation.
+
 ## Purpose
 
 This gateway exposes the MCP tools and prompts already provided by UltraRAG. It

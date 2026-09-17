@@ -1,0 +1,55 @@
+UPSTREAM ATTRIBUTION
+
+vanilla-ultra-rag-mcp-server is an independent compatibility gateway built
+directly on the UltraRAG project:
+
+    UltraRAG
+    https://github.com/OpenBMB/UltraRAG
+    https://ultrarag.openbmb.cn/
+
+UltraRAG's upstream README identifies it as a joint project of THUNLP at
+Tsinghua University, NEUIR at Northeastern University, OpenBMB, and AI9stars,
+together with the wider UltraRAG contributor community:
+
+    https://nlp.csai.tsinghua.edu.cn/
+    https://neuir.github.io/
+    https://www.openbmb.cn/home
+    https://github.com/AI9Stars
+    https://github.com/OpenBMB/UltraRAG/graphs/contributors
+
+This gateway relies on UltraRAG's MCP server architecture, tools, prompts,
+pipeline design, and runtime. It currently pins and verifies:
+
+    UltraRAG version 0.3.0.2
+    commit 3a709a2aea3fbe46acca59c422621c94b6e86857
+    https://github.com/OpenBMB/UltraRAG/tree/3a709a2aea3fbe46acca59c422621c94b6e86857
+
+UltraRAG is distributed under the Apache License, Version 2.0. Its license file
+contains the notice "Copyright 2023 OpenBMB":
+
+    https://github.com/OpenBMB/UltraRAG/blob/3a709a2aea3fbe46acca59c422621c94b6e86857/LICENSE.txt
+    https://www.apache.org/licenses/LICENSE-2.0
+
+The verified UltraRAG source snapshot downloaded by this gateway retains the
+upstream LICENSE.txt and all upstream notices. No UltraRAG source file is
+modified by this repository.
+
+SUGGESTED SOFTWARE CITATION
+
+The pinned UltraRAG revision does not include a dedicated UltraRAG BibTeX entry.
+When citing the software, a suitable repository citation is:
+
+    UltraRAG contributors. UltraRAG, version 0.3.0.2, commit
+    3a709a2aea3fbe46acca59c422621c94b6e86857. OpenBMB/UltraRAG.
+    https://github.com/OpenBMB/UltraRAG
+
+For subject-specific academic citations, consult the Publications section in
+UltraRAG's upstream README and cite the relevant original paper rather than
+attributing those papers to this gateway.
+
+INDEPENDENT PROJECT NOTICE
+
+This repository is not an official UltraRAG release and is not affiliated with
+or endorsed by OpenBMB, THUNLP, NEUIR, AI9stars, or the UltraRAG contributors.
+The UltraRAG name is used only to identify the upstream software with which this
+gateway interoperates.

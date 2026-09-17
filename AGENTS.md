@@ -29,6 +29,11 @@ Current baseline:
 
 ## Non-negotiable vanilla contract
 
+- Retain the prominent UltraRAG acknowledgement in `README.md`, the root
+  `NOTICE`, upstream project links, license information, and the independent
+  project disclaimer.
+- Credit THUNLP, NEUIR, OpenBMB, AI9stars, and the upstream contributors using
+  the wording supported by UltraRAG's own README. Do not imply endorsement.
 - Do not edit or patch UltraRAG source code.
 - Do not reimplement an upstream tool or prompt.
 - Do not change upstream input schemas, output schemas, return values, errors,

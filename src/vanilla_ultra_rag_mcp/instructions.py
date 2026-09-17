@@ -5,6 +5,10 @@ corpus_build_text_corpus and retriever_retriever_search.
 Namespaces: benchmark, corpus, custom, evaluation, generation, memory, prompt,
 reranker, retriever, router, and sayhello.
 
+Upstream credit: UltraRAG is developed by the UltraRAG team and contributors as
+a joint project of THUNLP, NEUIR, OpenBMB, and AI9stars. Canonical source:
+https://github.com/OpenBMB/UltraRAG. This gateway is independent and unofficial.
+
 For the official UltraRAG Vanilla RAG workflow, act as the MCP client
 orchestrator and preserve outputs between these upstream stages:
 1. benchmark_get_data -> q_ls and gt_ls

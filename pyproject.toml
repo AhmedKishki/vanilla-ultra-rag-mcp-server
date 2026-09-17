@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vanilla-ultra-rag-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "A sync-safe stdio MCP gateway for UltraRAG's existing MCP servers"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -29,6 +29,8 @@ vanilla-ultra-rag-ui = "vanilla_ultra_rag_mcp.ui:main"
 [project.urls]
 Repository = "https://github.com/AhmedKishki/vanilla-ultra-rag-mcp-server"
 Issues = "https://github.com/AhmedKishki/vanilla-ultra-rag-mcp-server/issues"
+"Upstream UltraRAG" = "https://github.com/OpenBMB/UltraRAG"
+"UltraRAG Documentation" = "https://ultrarag.openbmb.cn/pages/en/getting_started/introduction"
 
 [dependency-groups]
 dev = [

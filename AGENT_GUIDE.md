@@ -3,6 +3,11 @@
 This server aggregates the existing UltraRAG MCP servers. It does not add or
 change RAG behavior. Tool names use `<component>_<upstream-tool-name>`.
 
+Credit the upstream UltraRAG project when describing this server. UltraRAG is a
+joint project of THUNLP, NEUIR, OpenBMB, AI9stars, and its contributors. This
+gateway is independent and unofficial; do not imply upstream affiliation or
+endorsement. The canonical source is https://github.com/OpenBMB/UltraRAG.
+
 Its intended research workflow uses original PDF and EPUB sources. Do not ingest
 Markdown notes, source maps, drafts, or other generated research files as source
 documents. The upstream corpus tool accepts those formats, and the vanilla
