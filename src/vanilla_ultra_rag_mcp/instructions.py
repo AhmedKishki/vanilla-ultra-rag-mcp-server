@@ -9,10 +9,10 @@ For the official UltraRAG Vanilla RAG workflow, act as the MCP client
 orchestrator and preserve outputs between these upstream stages:
 1. benchmark_get_data -> q_ls and gt_ls
 2. retriever_retriever_init
-3. retriever_retriever_search(q_ls) -> ret_psg
+3. retriever_retriever_search(query_list=q_ls) -> ret_psg
 4. generation_generation_init
 5. request the MCP prompt prompt_qa_rag_boxed(q_ls, ret_psg, template)
-6. generation_generate(rendered prompt messages) -> ans_ls
+6. generation_generate(prompt_ls=rendered prompt message text) -> ans_ls
 7. custom_output_extract_from_boxed(ans_ls) -> pred_ls
 8. evaluation_evaluate(pred_ls, gt_ls, metrics, save_path)
 prompt_qa_rag_boxed is an MCP prompt, not a tool. A client must support MCP

@@ -43,7 +43,8 @@ the namespaced equivalents in the same order:
 1. `benchmark_get_data` produces `q_ls` and `gt_ls`.
 2. `retriever_retriever_init` loads the configured retriever and existing
    index.
-3. `retriever_retriever_search` uses `q_ls` and produces `ret_psg`.
+3. `retriever_retriever_search` receives the saved `q_ls` value through its
+   `query_list` argument and produces `ret_psg`.
 4. `generation_generation_init` loads or connects to the configured LLM.
 5. Request the MCP prompt `prompt_qa_rag_boxed` with `q_ls`, `ret_psg`, and the
    template path. This is a prompt request, not a tool call.
