@@ -5,16 +5,35 @@ corpus_build_text_corpus and retriever_retriever_search.
 Namespaces: benchmark, corpus, custom, evaluation, generation, memory, prompt,
 reranker, retriever, router, and sayhello.
 
+For the official UltraRAG Vanilla RAG workflow, act as the MCP client
+orchestrator and preserve outputs between these upstream stages:
+1. benchmark_get_data -> q_ls and gt_ls
+2. retriever_retriever_init
+3. retriever_retriever_search(q_ls) -> ret_psg
+4. generation_generation_init
+5. request the MCP prompt prompt_qa_rag_boxed(q_ls, ret_psg, template)
+6. generation_generate(rendered prompt messages) -> ans_ls
+7. custom_output_extract_from_boxed(ans_ls) -> pred_ls
+8. evaluation_evaluate(pred_ls, gt_ls, metrics, save_path)
+prompt_qa_rag_boxed is an MCP prompt, not a tool. A client must support MCP
+prompts and pass its rendered message text to generation_generate. For an
+interactive question, q_ls may come directly from the user and the benchmark
+and evaluation stages may be omitted; retrieval, RAG prompt construction, and
+generation are the essential RAG stages.
+
 Use the exact input schemas supplied with each tool. Important call order:
 - Corpus: build a corpus before chunking it.
 - This project's research workflow treats only PDF and EPUB files as source
   documents. The upstream corpus tool also accepts other formats, so do not pass
   it a mixed directory containing Markdown notes or generated research files.
 - Dense retrieval: retriever_init, then retriever_embed and retriever_index when
-  building; after an existing index is available, retriever_init then search.
+  building; after an existing index is available, retriever_init then
+  retriever_search. This is the retrieval path used by the official Vanilla RAG
+  example.
 - BM25: retriever_init with backend='bm25', then bm25_index when building. In
   UltraRAG 0.3.0.2, initialize once more to load the newly saved index before
-  bm25_search.
+  bm25_search. BM25 may replace the dense retrieval stages in a CPU-oriented
+  variant while the prompt and generation stages remain the same.
 - Reranking and generation: call the corresponding *_init tool before use.
 
 The inherited build tool generates UltraRAG server metadata; it is not document

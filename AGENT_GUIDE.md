@@ -34,6 +34,43 @@ agent's project instructions:
 
 ## Common call sequences
 
+### Official UltraRAG Vanilla RAG
+
+The documented upstream experiment is an MCP-client pipeline. When using this
+aggregate server, the AI agent takes the client's orchestration role and uses
+the namespaced equivalents in the same order:
+
+1. `benchmark_get_data` produces `q_ls` and `gt_ls`.
+2. `retriever_retriever_init` loads the configured retriever and existing
+   index.
+3. `retriever_retriever_search` uses `q_ls` and produces `ret_psg`.
+4. `generation_generation_init` loads or connects to the configured LLM.
+5. Request the MCP prompt `prompt_qa_rag_boxed` with `q_ls`, `ret_psg`, and the
+   template path. This is a prompt request, not a tool call.
+6. Pass the returned prompt message text as `prompt_ls` to
+   `generation_generate`, producing `ans_ls`.
+7. `custom_output_extract_from_boxed` converts `ans_ls` into `pred_ls`.
+8. `evaluation_evaluate` compares `pred_ls` with `gt_ls` and saves the selected
+   metrics.
+
+This is the exact component sequence in UltraRAG's `vanilla_rag.yaml`, with
+names changed only by the gateway's namespace prefix. The benchmark and
+evaluation stages are experiment scaffolding. For an interactive question, the
+agent can create `q_ls` from the user's question and stop after generation (or
+boxed extraction), but it must not omit retrieval or the RAG prompt.
+
+The official example uses dense retrieval. Its index is prepared separately:
+
+1. `retriever_retriever_init`
+2. `retriever_retriever_embed`
+3. `retriever_retriever_index`
+
+An MCP client that exposes tools but not MCP prompts cannot reproduce the exact
+upstream pipeline through this gateway. Enable prompt support in that client or
+use an UltraRAG YAML pipeline runner.
+
+### Corpus and retrieval preparation
+
 Text corpus:
 
 1. `corpus_build_text_corpus`
@@ -60,8 +97,10 @@ BM25:
 4. `retriever_bm25_search`
 
 Reranking and generation require their respective initialization tools first.
-Some backends require network credentials, optional dependencies, or GPU
-resources; follow the upstream tool description and configured environment.
+The default tested local retrieval profile is CPU BM25. Dense embedding and
+generation backends may require optional dependencies, network credentials, a
+model service, or GPU resources; follow the upstream schemas and configured
+environment.
 
 ## Important vanilla limitations
 

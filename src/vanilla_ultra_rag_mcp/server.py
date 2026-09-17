@@ -21,7 +21,7 @@ from .manifest import SERVER_SPECS
 from .runtime import RUNTIME_CACHE_ENV, RuntimeErrorBase, install_managed_runtime
 
 SERVER_NAME = "vanilla-ultra-rag-mcp"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.1.1"
 
 
 def _child_environment(config: GatewayConfig, namespace: str) -> dict[str, str]:

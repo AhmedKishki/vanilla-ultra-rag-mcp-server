@@ -2279,7 +2279,7 @@ wheels = [
 
 [[package]]
 name = "vanilla-ultra-rag-mcp"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "bm25s" },

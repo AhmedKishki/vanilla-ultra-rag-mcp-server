@@ -1,35 +1,32 @@
 # vanilla-ultra-rag-mcp-server
 
-Use UltraRAG from an AI agent as a project-local research knowledge base.
+Run UltraRAG's existing Vanilla RAG components through one stdio MCP server.
 
 ## Purpose
-
-This project is for research collections made from original PDF and EPUB
-sources. It lets an AI agent call UltraRAG to extract those sources, split them
-into searchable passages, build an index, and retrieve evidence from several
-works for a human researcher to inspect, compare, quote, and cite.
-
-The goal is not merely to chat with one document. Each research project should
-have its own durable knowledge base that can be searched repeatedly without
-mixing it with another project's sources.
 
 This gateway exposes the MCP tools and prompts already provided by UltraRAG. It
 does not modify UltraRAG or add new retrieval behavior. The current release is
 pinned to UltraRAG `0.3.0.2` at commit
 `3a709a2aea3fbe46acca59c422621c94b6e86857`.
 
-This vanilla release is the compatibility foundation. It can create and search
-a real local BM25 knowledge base, but it does not yet add structured source
-metadata, metadata filters, hybrid BM25/vector search, or page-level citation
-locators. Those belong in a separately named research extension rather than
-being presented as existing UltraRAG behavior.
+The baseline is UltraRAG's documented
+[`vanilla_rag.yaml` workflow](https://ultrarag.openbmb.cn/pages/en/pipeline/rag):
+load questions, retrieve passages, construct a RAG prompt, generate an answer,
+extract the answer, and optionally evaluate it. An AI agent connected through
+MCP takes the role that UltraRAG's YAML pipeline runner normally performs.
+
+This repository is the compatibility foundation. Research-specific source
+policy, metadata, provenance, citation locators, and project enforcement belong
+in `research-ultra-rag-mcp-server`, not in this vanilla gateway.
 
 What you get:
 
 - one MCP server named `vanilla-ultra-rag-mcp`;
 - 78 namespaced UltraRAG tools and 26 prompts;
 - persistent component state during an MCP session;
-- built-in instructions that explain tool ordering to the agent;
+- built-in instructions describing the official Vanilla RAG stage order;
+- all upstream retrieval, prompt, generation, extraction, and evaluation
+  components used by that workflow;
 - a CPU-tested path for document ingestion, chunking, BM25 indexing, and search;
 - project-owned workspaces; and
 - no separate UltraRAG clone.
@@ -99,6 +96,42 @@ models.
 Running `vanilla-ultra-rag-mcp` directly in a terminal produces no interactive
 prompt; a stdio MCP server waits for JSON-RPC messages from an MCP client.
 
+## Official Vanilla RAG workflow
+
+UltraRAG's pipeline is client-orchestrated. The gateway exposes the same stages
+with namespaced MCP names; it does not add a replacement pipeline tool.
+
+| Order | Upstream stage | Gateway component | Output used next |
+|---:|---|---|---|
+| 1 | `benchmark.get_data` | tool `benchmark_get_data` | `q_ls`, `gt_ls` |
+| 2 | `retriever.retriever_init` | tool `retriever_retriever_init` | initialized retriever |
+| 3 | `retriever.retriever_search` | tool `retriever_retriever_search` | `ret_psg` |
+| 4 | `generation.generation_init` | tool `generation_generation_init` | initialized generator |
+| 5 | `prompt.qa_rag_boxed` | MCP prompt `prompt_qa_rag_boxed` | rendered prompt messages |
+| 6 | `generation.generate` | tool `generation_generate` | `ans_ls` |
+| 7 | `custom.output_extract_from_boxed` | tool `custom_output_extract_from_boxed` | `pred_ls` |
+| 8 | `evaluation.evaluate` | tool `evaluation_evaluate` | metrics file and result |
+
+The prompt stage is an MCP **prompt**, not an MCP tool. The client must support
+MCP prompts and pass the returned message text to `generation_generate`.
+
+For an ordinary interactive question, the agent can supply `q_ls` directly and
+omit benchmark loading and evaluation. Retrieval → RAG prompt → generation is
+still required. For the documented experiment, use all eight stages.
+
+Before running the dense-retrieval workflow for the first time, prepare its
+index with `retriever_retriever_init`, `retriever_retriever_embed`, and
+`retriever_retriever_index`. The CPU-oriented alternative uses UltraRAG's BM25
+index and `retriever_bm25_search`, followed by the same prompt and generation
+stages.
+
+Example agent request:
+
+> Use the official UltraRAG Vanilla RAG workflow. Retrieve passages for my
+> question from the configured index, render `prompt_qa_rag_boxed` with those
+> passages, and generate a grounded answer. Show both the retrieved passages
+> and the answer. Do not answer from model memory without retrieval.
+
 ## What the knowledge base contains
 
 UltraRAG does not produce one special database file. A usable knowledge base is
@@ -132,10 +165,11 @@ the original file path or PDF page number.
 score matrices. These files are not readable research notes and do not replace
 the corpus or chunks. BM25 uses them to rank which chunks best match a query.
 
-A search therefore does not reopen every PDF. It searches the index, selects
-the highest-ranking chunk texts, and returns those texts to the AI agent. The
-agent then explains or quotes the evidence. Normal searches are returned through
-MCP and are not automatically saved as separate files.
+A search therefore does not reopen every PDF. It searches the index and returns
+the highest-ranking chunk texts. In the complete Vanilla RAG flow, those texts
+are inserted into `prompt_qa_rag_boxed` and sent to the configured generation
+backend. Normal search results are returned through MCP and are not
+automatically saved as separate files.
 
 ## Use it with documents
 
@@ -144,9 +178,10 @@ workflow explicitly. For example:
 
 > Using vanilla-ultra-rag-mcp, ingest all supported documents under
 > `/absolute/path/to/project/original-sources`, create corpus and chunk files under
-> `/absolute/path/to/project/.ultrarag`, build a CPU BM25 index, and search it
-> for "your research question". Show the retrieved passages and their available
-> source identifiers.
+> `/absolute/path/to/project/.ultrarag`, build a CPU BM25 index, retrieve passages
+> for "your research question", render the upstream RAG prompt, and generate a
+> grounded answer. Show the retrieved passages and their available source
+> identifiers alongside the answer.
 
 The input directory in that request must contain only PDF and EPUB source
 documents. Do not point the MCP corpus tool at a mixed directory containing
@@ -162,8 +197,9 @@ sequence is:
 5. `retriever_retriever_init` again to load the saved index
 6. `retriever_bm25_search`
 
-Direct search results are returned to the agent. They are not automatically
-written to a separate results file.
+This six-step list prepares and searches the CPU index. To complete RAG, follow
+the search with `prompt_qa_rag_boxed` and `generation_generate` as described
+above. Direct search results are not automatically written to a separate file.
 
 The upstream vanilla corpus tool also accepts Markdown and several other file
 types. The gateway exposes that tool unchanged, so PDF/EPUB-only ingestion is
@@ -207,6 +243,12 @@ Run the automated gateway tests with:
 uv run pytest -q
 ```
 
+The test suite locks the exact official Vanilla RAG tool/prompt surface and
+executes a CPU BM25 variant end to end through retrieval, prompt rendering,
+generation, boxed-answer extraction, and evaluation. Its generator is a local
+deterministic OpenAI-compatible test endpoint, so this validates integration,
+not real-model answer quality.
+
 ## Optional UltraRAG UI
 
 The pinned upstream UI can be launched without an UltraRAG clone:
@@ -236,6 +278,10 @@ This server intentionally preserves the upstream UltraRAG interface:
 - it does not combine BM25 and vector results into hybrid retrieval;
 - it does not simplify or hide heavyweight, GPU, or network-backed tools; and
 - it does not wrap UltraRAG's complete YAML pipeline runner as a new MCP tool.
+
+The last point preserves the upstream architecture: the connected AI agent is
+the MCP client orchestrator. Production generation still requires configuring
+one of UltraRAG's existing generation backends.
 
 See [AGENT_GUIDE.md](AGENT_GUIDE.md) for agent tool-use guidance and
 [AGENTS.md](AGENTS.md) for the repository's engineering contract.

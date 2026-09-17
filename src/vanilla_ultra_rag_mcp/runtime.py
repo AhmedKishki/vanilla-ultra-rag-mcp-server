@@ -137,7 +137,7 @@ def _download_archive(destination: Path) -> None:
     digest = hashlib.sha256()
     request = urllib.request.Request(
         ARCHIVE_URL,
-        headers={"User-Agent": "vanilla-ultra-rag-mcp/0.1.0"},
+        headers={"User-Agent": "vanilla-ultra-rag-mcp/0.1.1"},
     )
     try:
         with (
