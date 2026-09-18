@@ -13,4 +13,4 @@ __all__ = [
     "SERVER_SPECS",
     "STATEFUL_NAMESPACES",
 ]
-__version__ = "0.1.2"
+__version__ = "0.1.3"

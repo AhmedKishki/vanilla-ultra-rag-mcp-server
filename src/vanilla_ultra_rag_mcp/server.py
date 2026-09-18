@@ -17,11 +17,11 @@ from fastmcp.server.providers.proxy import ProxyClient, ProxyProvider
 
 from .config import ConfigurationError, GatewayConfig, resolve_config
 from .instructions import SERVER_INSTRUCTIONS
-from .manifest import SERVER_SPECS
+from .manifest import SERVER_SPECS, ServerSpec
 from .runtime import RUNTIME_CACHE_ENV, RuntimeErrorBase, install_managed_runtime
 
 SERVER_NAME = "vanilla-ultra-rag-mcp"
-SERVER_VERSION = "0.1.2"
+SERVER_VERSION = "0.1.3"
 
 
 def _child_environment(config: GatewayConfig, namespace: str) -> dict[str, str]:
@@ -42,7 +42,10 @@ def _child_environment(config: GatewayConfig, namespace: str) -> dict[str, str]:
     return env
 
 
-def create_gateway(config: GatewayConfig) -> FastMCP[Any]:
+def create_gateway(
+    config: GatewayConfig,
+    server_specs: tuple[ServerSpec, ...] = SERVER_SPECS,
+) -> FastMCP[Any]:
     """Create the aggregate server without changing any upstream component."""
     transports: list[StdioTransport] = []
 
@@ -67,7 +70,7 @@ def create_gateway(config: GatewayConfig) -> FastMCP[Any]:
     # an incomplete server.
     gateway.provider_error_strategy = "raise"
 
-    for spec in SERVER_SPECS:
+    for spec in server_specs:
         entrypoint = config.ultrarag_root / spec.relative_entrypoint
         transport = StdioTransport(
             command=str(config.python_executable),
@@ -102,6 +105,15 @@ def _parser() -> argparse.ArgumentParser:
         description=(
             "Expose an unmodified, pinned UltraRAG MCP surface through one "
             "namespaced stdio server."
+        ),
+    )
+    parser.add_argument(
+        "--namespace",
+        action="append",
+        choices=tuple(spec.namespace for spec in SERVER_SPECS),
+        help=(
+            "Expose only this UltraRAG namespace. Repeat for multiple namespaces. "
+            "Omit to expose the complete vanilla surface."
         ),
     )
     parser.add_argument(
@@ -160,7 +172,13 @@ def main() -> None:
     except (ConfigurationError, RuntimeErrorBase) as exc:
         parser.error(str(exc))
 
-    gateway = create_gateway(config)
+    selected_namespaces = set(args.namespace or ())
+    selected_specs = tuple(
+        spec
+        for spec in SERVER_SPECS
+        if not selected_namespaces or spec.namespace in selected_namespaces
+    )
+    gateway = create_gateway(config, selected_specs)
     gateway.run(transport="stdio", show_banner=False)
 
 

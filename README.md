@@ -127,6 +127,11 @@ processes.
 The executable is a stdio server. Running it directly shows no interactive
 prompt because it waits for an MCP client.
 
+By default the gateway starts the complete upstream surface. Integrators that
+need only particular UltraRAG components can repeat `--namespace`; for example,
+`--namespace corpus --namespace retriever` exposes only those two namespaced
+components and avoids starting unrelated child servers.
+
 ## Use it
 
 Ask the connected agent to perform a specific UltraRAG workflow. For example:

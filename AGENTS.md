@@ -35,6 +35,8 @@ Current baseline:
 - Do not add custom MCP tools, prompts, resources, retrieval algorithms,
   metadata, filters, citation behavior, or project enforcement.
 - Namespacing is the only intentional component-name adaptation.
+- Optional `--namespace` filtering may expose a subset of the same unmodified
+  components; omitting it must always preserve the complete captured surface.
 - Keep the selected upstream version and commit explicit and fail closed on
   drift.
 - Keep MCP stdout free of logs, progress text, and banners.

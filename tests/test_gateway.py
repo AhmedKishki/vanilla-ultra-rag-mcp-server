@@ -76,6 +76,31 @@ def test_gateway_is_exact_namespaced_union(tmp_path: Path) -> None:
     asyncio.run(_assert_contract_parity(tmp_path / "parity-workspace"))
 
 
+async def _assert_namespace_selection(workspace: Path) -> None:
+    config = resolve_config(
+        ultrarag_root(),
+        workspace,
+        python_executable=sys.executable,
+    )
+    selected = tuple(
+        spec for spec in SERVER_SPECS if spec.namespace in {"corpus", "retriever"}
+    )
+    async with Client(create_gateway(config, selected)) as client:
+        tools = {tool.name for tool in await client.list_tools()}
+        prompts = {prompt.name for prompt in await client.list_prompts()}
+
+    assert tools
+    assert all(name.startswith(("corpus_", "retriever_")) for name in tools)
+    assert not prompts
+    assert (workspace / "logs" / "corpus-child-stderr.log").exists()
+    assert (workspace / "logs" / "retriever-child-stderr.log").exists()
+    assert not (workspace / "logs" / "generation-child-stderr.log").exists()
+
+
+def test_gateway_can_limit_upstream_namespaces(tmp_path: Path) -> None:
+    asyncio.run(_assert_namespace_selection(tmp_path / "selected-workspace"))
+
+
 async def _assert_bm25_state_survives_calls(workspace: Path) -> None:
     corpus_path = workspace / "corpus.jsonl"
     workspace.mkdir(parents=True)
