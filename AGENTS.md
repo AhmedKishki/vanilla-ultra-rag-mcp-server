@@ -69,12 +69,14 @@ The aggregate gateway keeps one child process per upstream component alive for t
 - `src/vanilla_ultra_rag_mcp/server.py`: aggregate stdio server and child lifecycle.
 - `src/vanilla_ultra_rag_mcp/config.py`: runtime, revision, interpreter, and workspace validation.
 - `src/vanilla_ultra_rag_mcp/runtime.py`: download, extraction, archive hash, tree hash, cache, and offline validation.
+- `src/vanilla_ultra_rag_mcp/tree_manifest.py`: generated per-file digests for the pinned tree, used to name a differing path.
 - `src/vanilla_ultra_rag_mcp/instructions.py`: concise instructions returned in the MCP initialization response.
 - `src/vanilla_ultra_rag_mcp/manifest.py`: pinned upstream server inventory.
 - `src/vanilla_ultra_rag_mcp/ui.py`: launcher for the existing upstream UI.
 - `compatibility/*.json`: reviewed discovery contract for the pinned release.
 - `scripts/verify_corpus.py`: end-to-end document ingestion and CPU BM25 verifier through real stdio MCP.
 - `scripts/generate_compatibility_manifest.py`: deliberate contract-regeneration utility.
+- `scripts/generate_tree_manifest.py`: deliberate pinned-tree digest regeneration utility.
 - `tests/`: contract parity, real stdio, and persistent BM25 state tests.
 - `AGENT_GUIDE.md`: operational instructions for agents using the MCP tools; this file instead governs agents modifying the repository.
 
@@ -82,11 +84,15 @@ The aggregate gateway keeps one child process per upstream component alive for t
 
 Normal startup does not require an UltraRAG Git clone. It downloads the official commit archive, verifies `ARCHIVE_SHA256`, safely extracts it, verifies `TREE_SHA256`, and stores it under the platform user cache. The gateway validates the snapshot on every start.
 
+`src/vanilla_ultra_rag_mcp/tree_manifest.py` records the SHA-256 of every file in the pinned tree, so a validation failure can name the differing path. Regenerate it with `scripts/generate_tree_manifest.py` whenever `TREE_SHA256` changes, and change them in the same commit.
+
 An explicit `--ultrarag-root` checkout is a development-only override. It must be at the baseline commit with no tracked modifications.
 
 `--workspace-root` controls the child working directory, logs, and UI storage. Upstream tools may still accept arbitrary caller-provided paths; the vanilla gateway documents project separation but does not enforce it.
 
 Prevent Python bytecode from being written into the verified runtime. Any new runtime output must go to the external workspace or an explicit user-selected path.
+
+`install_managed_runtime` leaves the verified tree read-only — `0444` files, `0555` directories — and prints the command that undoes it. An installed tree must therefore never be edited in place to make it usable; validation is read-only and a repaired tree is a different tree.
 
 ## Dependency and packaging rules
 
@@ -124,7 +130,7 @@ For document-path changes, run `scripts/verify_corpus.py` against a representati
 Never accept upstream drift automatically. To support a new UltraRAG revision:
 
 1. inspect the new official commit;
-2. update the pinned version, commit, archive SHA-256, and tree SHA-256;
+2. update the pinned version, commit, archive SHA-256, and tree SHA-256, and regenerate `tree_manifest.py` from the validated new tree;
 3. regenerate and review the compatibility manifest;
 4. inspect every added, removed, or changed MCP component;
 5. run parity, stdio, managed-runtime, CPU retrieval, and real-corpus tests; and

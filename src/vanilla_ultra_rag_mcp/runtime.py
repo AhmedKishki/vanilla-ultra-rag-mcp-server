@@ -6,23 +6,28 @@ import argparse
 import hashlib
 import json
 import os
+import stat
 import sys
 import tarfile
 import tempfile
 import tomllib
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from platformdirs import user_cache_path
 
 from .manifest import BASELINE_COMMIT, BASELINE_VERSION, SERVER_SPECS
+from .tree_manifest import TREE_FILES
 
 ARCHIVE_URL = f"https://codeload.github.com/OpenBMB/UltraRAG/tar.gz/{BASELINE_COMMIT}"
 ARCHIVE_SHA256 = "cb7b7b10dd8eacecd43d7e6705baea4cd431710e7016a0b66673c56821accece"
 TREE_SHA256 = "054ec995256de591bf8b1f17bfbb4788bee4694e6f73dc971580c1676ee8c025"
 MARKER_FILENAME = ".vanilla-ultra-rag-runtime.json"
 RUNTIME_CACHE_ENV = "VANILLA_ULTRARAG_CACHE_ROOT"
+READ_ONLY_FILE_MODE = 0o444
+READ_ONLY_DIRECTORY_MODE = 0o555
 
 
 class RuntimeErrorBase(RuntimeError):
@@ -33,8 +38,35 @@ class RuntimeInstallError(RuntimeErrorBase):
     """Raised when the pinned runtime cannot be installed safely."""
 
 
+@dataclass(frozen=True, slots=True)
+class TreeDifference:
+    """One path that separates an installed tree from the pinned baseline."""
+
+    path: str
+    kind: str
+    mode: str | None = None
+
+    def describe(self) -> str:
+        if self.kind == "missing":
+            return "missing from the installed tree"
+        if self.kind == "changed":
+            return "present with different content"
+        if self.mode:
+            return f"unexpected in the installed tree, mode {self.mode}"
+        return "unexpected in the installed tree"
+
+
 class RuntimeValidationError(RuntimeErrorBase):
     """Raised when an existing managed runtime does not match the baseline."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        difference: TreeDifference | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.difference = difference
 
 
 def default_cache_root() -> Path:
@@ -53,13 +85,24 @@ def managed_runtime_path(cache_root: str | Path | None = None) -> Path:
     return base / "runtime" / f"UltraRAG-{BASELINE_COMMIT}"
 
 
-def _tree_hash(root: Path) -> str:
-    digest = hashlib.sha256()
-    files = sorted(
+def _tree_paths(root: Path) -> list[Path]:
+    return sorted(
         path
         for path in root.rglob("*")
         if path.is_file() and path.name != MARKER_FILENAME
     )
+
+
+def _tree_files(root: Path) -> dict[str, str]:
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in _tree_paths(root)
+    }
+
+
+def _tree_hash(root: Path) -> str:
+    digest = hashlib.sha256()
+    files = _tree_paths(root)
     for path in files:
         relative = path.relative_to(root).as_posix().encode("utf-8")
         content = path.read_bytes()
@@ -89,6 +132,23 @@ def _expected_marker() -> dict[str, Any]:
         "archive_sha256": ARCHIVE_SHA256,
         "tree_sha256": TREE_SHA256,
     }
+
+
+def describe_tree_difference(root: str | Path) -> TreeDifference | None:
+    """Return the first path that separates the tree from the pinned baseline."""
+    runtime_root = Path(root).expanduser().resolve()
+    observed = _tree_files(runtime_root)
+    for relative in sorted(set(TREE_FILES) | set(observed)):
+        if relative not in observed:
+            return TreeDifference(relative, "missing")
+        if relative not in TREE_FILES:
+            observed = os.lstat(runtime_root / relative)
+            return TreeDifference(
+                relative, "unexpected", stat.filemode(observed.st_mode)
+            )
+        if observed[relative] != TREE_FILES[relative]:
+            return TreeDifference(relative, "changed")
+    return None
 
 
 def validate_managed_runtime(root: str | Path) -> Path:
@@ -125,10 +185,16 @@ def validate_managed_runtime(root: str | Path) -> Path:
 
     actual_hash = _tree_hash(runtime_root)
     if actual_hash != TREE_SHA256:
+        difference = describe_tree_difference(runtime_root)
+        if difference is None:
+            detail = "No single file explains the difference."
+        else:
+            detail = f"The tree differs at {difference.path}: {difference.describe()}."
         raise RuntimeValidationError(
             "Managed runtime content hash mismatch: "
-            f"got {actual_hash}, expected {TREE_SHA256}. "
-            "Use a fresh cache location rather than modifying the snapshot."
+            f"got {actual_hash}, expected {TREE_SHA256}. {detail} "
+            "Use a fresh cache location rather than modifying the snapshot.",
+            difference=difference,
         )
     return runtime_root
 
@@ -191,6 +257,29 @@ def _safe_extract(archive_path: Path, destination: Path) -> Path:
     return extracted
 
 
+def _posix_modes_available() -> bool:
+    return os.name == "posix" and hasattr(os, "chmod")
+
+
+def make_tree_read_only(root: str | Path) -> str | None:
+    """Strip write permission from an installed tree, or explain why it was skipped."""
+    if not _posix_modes_available():
+        return (
+            f"POSIX permission modes are unavailable on {sys.platform}, so the "
+            f"verified runtime at {root} is left writable"
+        )
+    tree_root = Path(root)
+    for path in tree_root.rglob("*"):
+        if path.is_file():
+            os.chmod(path, READ_ONLY_FILE_MODE)
+    directories = [path for path in tree_root.rglob("*") if path.is_dir()]
+    for path in sorted(
+        [*directories, tree_root], key=lambda item: len(item.parts), reverse=True
+    ):
+        os.chmod(path, READ_ONLY_DIRECTORY_MODE)
+    return None
+
+
 def install_managed_runtime(
     cache_root: str | Path | None = None,
     *,
@@ -245,6 +334,14 @@ def install_managed_runtime(
                 f"Failed to install the managed runtime at {target}"
             ) from exc
 
+    note = make_tree_read_only(target)
+    if note is not None:
+        print(note, file=sys.stderr)
+    else:
+        print(
+            f"Verified runtime is read-only. To make it writable: chmod -R u+w {target}",
+            file=sys.stderr,
+        )
     return validate_managed_runtime(target)
 
 

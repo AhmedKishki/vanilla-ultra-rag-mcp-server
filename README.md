@@ -71,6 +71,14 @@ uv run vanilla-ultra-rag-runtime --offline
 
 The second command proves that the cached runtime can be validated without a network connection.
 
+The installed snapshot is read-only: `0444` for its files and `0555` for its directories. A read-only tree still validates, and the extra permission prevents a component process from writing anything into the runtime, such as a `__pycache__` directory. The install prints the command that undoes it, which you need only when pointing `--ultrarag-root` at the installed tree for development:
+
+```bash
+chmod -R u+w /path/to/the/installed/runtime
+```
+
+A validation failure that reports a content hash mismatch also names the file that differs, the kind of difference, and the observed mode of an unexpected file. Restore the tree to its installed state, or install into a fresh cache root, rather than editing the snapshot in place.
+
 ## Configure your MCP client
 
 Create a workspace for runtime logs and generated state, then replace both placeholder paths with absolute paths:
