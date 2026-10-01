@@ -2,7 +2,11 @@
 
 Use UltraRAG's existing MCP tools and prompts through one local stdio MCP server.
 
-This gateway preserves the pinned upstream interface. It combines UltraRAG's independent MCP components behind one endpoint, adds deterministic namespace prefixes to avoid name collisions, and keeps component processes alive so initialization state survives between calls. It does not add a new retrieval algorithm or change upstream tool behavior.
+- This gateway preserves the pinned upstream interface.
+  - It combines UltraRAG's independent MCP components behind one endpoint.
+  - It adds deterministic namespace prefixes to avoid name collisions.
+  - It keeps component processes alive so initialization state survives between calls.
+  - It does not add a new retrieval algorithm or change upstream tool behavior.
 
 ## Built on UltraRAG
 
@@ -12,14 +16,14 @@ This is an independent compatibility project and is not an official UltraRAG rel
 
 ## What the server offers
 
-- one stdio MCP server named `vanilla-ultra-rag-mcp`;
-- 78 namespaced UltraRAG tools and 26 namespaced prompts;
-- upstream corpus, retrieval, reranking, prompt, generation, routing, memory, benchmark, and evaluation components;
-- persistent component state for the duration of an MCP session;
-- FAISS, Qdrant, Milvus, BM25, and web-search capabilities exposed wherever the pinned UltraRAG release provides them;
-- a managed, integrity-checked UltraRAG runtime with no Git clone required;
-- a CPU-tested BM25 workflow; and
-- an optional launcher for the existing UltraRAG web interface.
+- One stdio MCP server serves the whole surface, under the name `vanilla-ultra-rag-mcp`.
+- The surface is 78 namespaced UltraRAG tools and 26 namespaced prompts.
+- Every upstream component is reachable: corpus, retrieval, reranking, prompt, generation, routing, memory, benchmark, and evaluation.
+- A component keeps its state for the duration of one MCP session.
+- FAISS, Qdrant, Milvus, BM25, and web-search capabilities are exposed wherever the pinned UltraRAG release provides them.
+- The managed UltraRAG runtime is integrity-checked and needs no Git clone.
+- The BM25 workflow is tested on CPU.
+- An optional launcher starts the existing UltraRAG web interface.
 
 Names follow `<component>_<upstream-name>`. Examples include `corpus_chunk_documents`, `retriever_retriever_search`, and `generation_generate`.
 
@@ -41,16 +45,18 @@ vanilla-ultra-rag-mcp
              verified UltraRAG snapshot
 ```
 
-The first launch downloads the official pinned source archive, verifies the archive and extracted file tree, and caches it in the operating-system user cache. Every later launch validates the snapshot before starting UltraRAG's component servers.
-
-The connected agent is the orchestrator. It calls initialization, retrieval, prompt, and generation components in order and passes each stage's output to the next stage. There is intentionally no additional one-call pipeline tool.
+- The first launch downloads the official pinned source archive, verifies the archive and extracted file tree, and caches it in the operating-system user cache.
+- Every later launch validates the snapshot before starting UltraRAG's component servers.
+- The connected agent is the orchestrator.
+  - It calls initialization, retrieval, prompt, and generation components in order and passes each stage's output to the next stage.
+  - There is intentionally no additional one-call pipeline tool.
 
 ## Requirements
 
-- Python 3.11 or 3.12
-- [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
-- Linux for the currently tested setup
-- Internet access during installation and first runtime download
+- The server needs Python 3.11 or 3.12.
+- The build needs [`uv`](https://docs.astral.sh/uv/getting-started/installation/).
+- Only Linux is currently tested.
+- Installation and the first runtime download need internet access.
 
 Individual UltraRAG tools may require extra model files, credentials, services, or GPU resources. The CPU BM25 path does not require a GPU.
 
@@ -71,7 +77,11 @@ uv run vanilla-ultra-rag-runtime --offline
 
 The second command proves that the cached runtime can be validated without a network connection.
 
-The installed snapshot is read-only: `0444` for its files and `0555` for its directories. A read-only tree still validates, and the extra permission prevents a component process from writing anything into the runtime, such as a `__pycache__` directory. The install prints the command that undoes it, which you need only when pointing `--ultrarag-root` at the installed tree for development:
+The installed snapshot is read-only: `0444` for its files and `0555` for its directories.
+
+- A read-only tree still validates.
+- The extra permission prevents a component process from writing anything into the runtime, such as a `__pycache__` directory.
+- The install prints the command that undoes it, which you need only when pointing `--ultrarag-root` at the installed tree for development:
 
 ```bash
 chmod -R u+w /path/to/the/installed/runtime
@@ -101,13 +111,13 @@ Create a workspace for runtime logs and generated state, then replace both place
 }
 ```
 
-A copyable configuration is provided in [`mcp_settings.example.json`](mcp_settings.example.json). For Cline, place the entry under `mcpServers`, save the configuration, and reload VS Code.
-
-Keep `autoApprove` empty initially. The upstream surface contains tools that write files, download models, call network services, or start heavyweight processes.
-
-The executable is a stdio server. Running it directly shows no interactive prompt because it waits for an MCP client.
-
-By default the gateway starts the complete upstream surface. Integrators that need only particular UltraRAG components can repeat `--namespace`; for example, `--namespace corpus --namespace retriever` exposes only those two namespaced components and avoids starting unrelated child servers.
+- A copyable configuration is provided in [`mcp_settings.example.json`](mcp_settings.example.json).
+- For Cline, place the entry under `mcpServers`, save the configuration, and reload VS Code.
+- Keep `autoApprove` empty initially.
+  - The upstream surface contains tools that write files, download models, call network services, or start heavyweight processes.
+- The executable is a stdio server, so running it directly shows no interactive prompt: it waits for an MCP client.
+- By default the gateway starts the complete upstream surface.
+  - Integrators that need only particular UltraRAG components can repeat `--namespace`; `--namespace corpus --namespace retriever` exposes only those two namespaced components and avoids starting unrelated child servers.
 
 ## Use it
 
@@ -128,9 +138,10 @@ The official Vanilla RAG experiment uses these namespaced stages:
 | 7 | tool `custom_output_extract_from_boxed` | extracted predictions |
 | 8 | tool `evaluation_evaluate` | evaluation result |
 
-For an interactive question, the agent can provide the question directly and omit benchmark loading and evaluation. Retrieval, prompt construction, and generation remain the essential RAG stages.
-
-`prompt_qa_rag_boxed` is an MCP prompt, not a tool. The MCP client must support prompts and pass its rendered message text to `generation_generate`.
+- For an interactive question, the agent can provide the question directly and omit benchmark loading and evaluation.
+  - Retrieval, prompt construction, and generation remain the essential RAG stages.
+- `prompt_qa_rag_boxed` is an MCP prompt, not a tool.
+  - The MCP client must support prompts and pass its rendered message text to `generation_generate`.
 
 ### Prepare retrieval
 
@@ -200,11 +211,12 @@ The verifier's PDF/EPUB filter is a test convenience. The MCP gateway itself pre
 
 ## Workspace and storage
 
-`--workspace-root` sets the working directory for component processes and keeps ordinary logs and UI storage outside the verified runtime snapshot. Use a different workspace for each project.
-
-This is organizational separation, not a security boundary. Upstream tools can accept caller-selected input and output paths, so confirm every path before a write operation.
-
-The managed UltraRAG snapshot is cached separately as a read-only runtime dependency. It does not contain your corpus or indexes.
+- `--workspace-root` sets the working directory for component processes and keeps ordinary logs and UI storage outside the verified runtime snapshot.
+  - Use a different workspace for each project.
+  - This is organizational separation, not a security boundary.
+  - Upstream tools can accept caller-selected input and output paths, so confirm every path before a write operation.
+- The managed UltraRAG snapshot is cached separately as a read-only runtime dependency.
+  - It does not contain your corpus or indexes.
 
 ## Optional UltraRAG interface
 
